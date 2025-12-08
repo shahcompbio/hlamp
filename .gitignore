@@ -1,0 +1,70 @@
+# Ignore specific directories
+.DS_Store/
+SCLC/
+SCLC_MET/
+submitted/
+
+
+
+# General files to ignore
+.DS_Store
+*.log
+*.tmp
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyo
+.Python
+env/
+venv/
+ENV/
+.venv/
+pip-log.txt
+.tox/
+.pytest_cache/
+.coverage
+.coverage.*
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb~  # Backup files
+
+# R
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# RStudio
+.Rproj.user/
+.Rproj/
+.Rbuildignore
+
+# Compiled source code
+*.o
+*.so
+*.a
+
+# Unit test / coverage reports
+*.lcov
+coverage/
+.nox/
+.cache/
+
+# Temporary files
+*.tmp
+*.out
+*.aux
+
+# Operating system files
+Thumbs.db
+desktop.ini
+
+
