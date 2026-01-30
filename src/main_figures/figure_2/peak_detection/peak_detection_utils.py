@@ -1,35 +1,25 @@
-# Change the dir to /data1/shahs3/users/salehis/ecdna/src/mixture_model
-os.chdir("/data1/shahs3/users/salehis/ecdna/src/mixture_model")
-# Generic imports
 import glob
 from glob import glob
 import numpy as np
 import os
-import yaml
 import pandas as pd
 from scipy.stats import norm
 
 import numpy as np
 import seaborn as sns
-import scanpy as sc
 import os
 import pandas as pd
-from matplotlib import font_manager
 from matplotlib import rcParams
 import matplotlib.pyplot as plt
-
 
 ## Peack detection specific
 from scipy.signal import find_peaks
 from scipy.ndimage import gaussian_filter1d
-import os
-import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.signal import peak_widths
-
-
 import pickle
+
+
 from mixture_models_pyro_utils import load_data
 
 
@@ -43,12 +33,6 @@ def setup_dirs(outDir):
     return figuresDir, tablesDir, dataDir
 
 
-def force_arial():
-    arial_font_path = "/home/salehis/projects/cdm/fonts/arial.ttf"
-    font_manager.fontManager.addfont(arial_font_path)
-    prop = font_manager.FontProperties(fname=arial_font_path)
-    print("Arial font forced")
-
 
 ####################################################
 # Workhorse peak detection functions
@@ -60,7 +44,6 @@ def compute_peaks(data, num_bins=None, sigma=1.0, **kwargs):
         num_bins = np.unique(data).shape[0]
         # minimum of this or the max value in the data
         num_bins = min(num_bins, int(np.max(data)))
-    #counts, bin_edges = np.histogram(data, bins=num_bins)
     # Padding to capture the left tail
     lo, hi = float(np.min(data)), float(np.max(data))
     bw = (hi - lo) / num_bins
@@ -83,7 +66,7 @@ def compute_peaks(data, num_bins=None, sigma=1.0, **kwargs):
     plt.title("Histogram and Smoothed Histogram")
     plt.legend()
     plt.show()
-    save_path = '/data1/shahs3/users/salehis/ecdna/results/clone_to_peak_assignment_dec_24/figures/histogram_example.png'
+    save_path = 'figures/histogram_example.png'
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.close()
     # Choose one of the smoothed versions for peak detection:
@@ -231,7 +214,6 @@ def plot_result(
         s=100,
         label="Detected Peaks",
     )
-    # ax.plot(bin_centers[peaks], counts[peaks], "rx", markersize=10, label="Detected Peaks")
     if titleStr is not None:
         plt.title(titleStr)
     else:
@@ -332,7 +314,6 @@ def handle_item(
     assert dataDir is not None, "Please provide dataDir"
     # Load the data
     dataset_name = os.path.basename(fpath).split(".")[0]
-    # vals, _, _ = load_data(dat_path=fpath, locus=locus, do_log=False, do_prune_left=False, keep_cells=tumor_cells, drop_normals=True)
     vals, _, _, remaining_cells = load_data(
         dat_path=fpath,
         locus=locus,
@@ -347,22 +328,6 @@ def handle_item(
     print(f"Dataset: {dataset_name}, Locus: {locus}, Min value: {np.min(vals)}, Max value: {np.max(vals)}, N cells: {vals.shape[0]}")
     n_cells = vals.shape[0]
     fname = f"{dataset_name}_{locus}_peak_detection.png"
-    # Experimental
-    # left_base_positions, right_base_positions, peak_heights_list = handle_data(
-    #     vals,
-    #     num_bins=50,
-    #     #sigma=1.5,
-    #     sigma=1.0,
-    #     outDir= figuresDir,
-    #     fname=fname,
-    #     height=1.01,
-    #     distance=1,
-    #     width=(1, None),
-    #     prominence=1.0, # reduce from 1.5
-    #     # pass on the options
-    #     **kwargs
-    # )
-    # DEFAULT VALUES: Nov 23 2025
     left_base_positions, right_base_positions, peak_heights_list, orig_results = (
         handle_data(
             vals,
