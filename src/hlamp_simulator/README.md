@@ -1,11 +1,11 @@
-Files:
+## Files
 
 ```
 bfb_simul.py: Main simulation code with CLI. bfb_simul_viz.py: Utility functions for visualization in form of histograms.
 ```
 
 
-Example run:
+## Example run
 
 ```
 python src/bfb_simul.py \

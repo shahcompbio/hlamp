@@ -6,8 +6,10 @@ import pickle
 import yaml
 from tqdm import tqdm
 import numpy as np
-import matplotlib.pyplot as plt
 import argparse
+import string
+import random
+import datetime
 from bfb_simul_viz import plot_population_size, plot_histogram, plot_subsample_histogram
 
 
@@ -32,12 +34,9 @@ def get_death_rate_scenario(scenario_name, **overrides):
 
     Override any returned parameter by passing it as **overrides.
     """
-
     # Define fixed values for the low and high cutoffs
     DEFAULT_LOW_CUT = 100
     DEFAULT_HIGH_CUT = 500
-    # DEFAULT_LOW_CUT = 10
-    # DEFAULT_HIGH_CUT = 100
 
     scenario_name = str(scenario_name).strip().lower()
 
@@ -52,10 +51,7 @@ def get_death_rate_scenario(scenario_name, **overrides):
             "low_cut": DEFAULT_LOW_CUT,
             "high_cut": DEFAULT_HIGH_CUT,
             "death_low_mult": 2.0,
-            # "death_mid_mult": 10.0,
-            # "death_mid_mult": .1,
             "death_mid_mult": 0.001,
-            # "death_high_mult": 3.0,
             "death_high_mult": 4.0,
         }
 
@@ -68,8 +64,6 @@ def get_death_rate_scenario(scenario_name, **overrides):
             "death_mid_mult": 1.0,
             "death_high_mult": 3.0,  # high penalty only
         }
-    # one for mid_and_high
-
     elif scenario_name in {"mid_and_high", "medium_and_high"}:
         params = {
             "mode": "cn_thresholds",
@@ -79,7 +73,6 @@ def get_death_rate_scenario(scenario_name, **overrides):
             "death_mid_mult": 3.0,  # medium penalty
             "death_high_mult": 3.0,  # high penalty
         }
-
     elif scenario_name in {"carrying_capacity", "capacity", "density"}:
         params = {
             "mode": "carrying_capacity",
@@ -87,7 +80,6 @@ def get_death_rate_scenario(scenario_name, **overrides):
             "cc_strength": 5.0,
             "cc_power": 1.0,
         }
-
     else:
         raise ValueError(
             f"Unknown death-rate scenario: {scenario_name}. "
@@ -175,74 +167,6 @@ def get_division_rate(
     # Return an array of the size ndna with the global_div value
     return global_div * np.ones_like(ndna)
 
-    # Get threshold values and multipliers from kwargs.
-    low_cut = kwargs.get("N1", 50)
-    high_cut = kwargs.get("N2", 100)
-    # The multipliers for the division probability.
-    low_mult = kwargs.get("N1_m", 0.7)
-    mid_mult = kwargs.get("N1_m1", 1.0)
-    high_mult = kwargs.get("N1_m2", 0.9)
-
-    # Compute cell-specific multiplier based on ndna thresholds.
-    multiplier = np.where(
-        ndna < low_cut, low_mult, np.where(ndna > high_cut, high_mult, mid_mult)
-    )
-
-    # Final division probability for each cell.
-    div_prob = global_div * multiplier
-    div_prob = np.clip(div_prob, 0, 1)
-
-    return div_prob
-
-
-# def get_death_rate(ndna, base_death_rate, **kwargs):
-#     """
-#     Compute cell-specific death probabilities based on the cell's nuclear DNA (ndna) copy number,
-#     applying different multipliers according to specified thresholds. Cells with lower nDNA
-#     receive a higher multiplier, thereby increasing their death probability.
-
-#     Parameters
-#     ----------
-#     ndna : np.array
-#         Array of nuclear DNA copy numbers for each cell.
-#     base_death_rate : float
-#         Base death rate.
-#     **kwargs :
-#         low_cut : int, optional
-#             Threshold for nDNA below which a higher death multiplier is applied (default: 10).
-#         high_cut : int, optional
-#             Threshold for nDNA above which a lower death multiplier is applied (default: 50).
-#         death_low_mult : float, optional
-#             Multiplier for cells with nDNA < low_cut (default: 1.2).
-#         death_mid_mult : float, optional
-#             Multiplier for cells with low_cut <= nDNA <= high_cut (default: 1.0).
-#         death_high_mult : float, optional
-#             Multiplier for cells with nDNA > high_cut (default: 0.8).
-
-#     Returns
-#     -------
-#     death_rate_arr : np.array
-#         Array of cell-specific death rates after applying the nDNA-based multipliers.
-#     """
-#     #return base_death_rate
-#     low_cut = kwargs.get("low_cut", 50)
-#     high_cut = kwargs.get("high_cut", 100)
-#     death_low_mult = kwargs.get("death_low_mult", 1.5)
-#     death_mid_mult = kwargs.get("death_mid_mult", 1.0)
-#     death_high_mult = kwargs.get("death_high_mult", 1.1)
-
-#     # Determine the multiplier for each cell based on its nDNA:
-#     multiplier = np.where(
-#         ndna < low_cut,
-#         death_low_mult,
-#         np.where(ndna > high_cut, death_high_mult, death_mid_mult),
-#     )
-
-#     death_rate_arr = base_death_rate * multiplier
-#     death_rate_arr = np.clip(death_rate_arr, 0, 1)
-
-#     return death_rate_arr
-
 
 def get_death_rate(ndna, base_death_rate, N_CELLS=None, mode="cn_thresholds", **kwargs):
     """
@@ -256,7 +180,7 @@ def get_death_rate(ndna, base_death_rate, N_CELLS=None, mode="cn_thresholds", **
         Apply low/mid/high multipliers based on low_cut/high_cut
     mode="carrying_capacity":
         Multiply base_death_rate by a density factor that depends on n_cells / N_CELLS
-        Optionally, you can still pass cn_threshold params too, but by default it's pure density.
+        Optionally, pass cn_threshold params too, but by default it's pure density.
     """
     n_cells = ndna.shape[0]
 
@@ -448,18 +372,6 @@ def simulate(
         # ---------------------------
         # Death Phase
         # ---------------------------
-        # base_death_rates = get_death_rate(
-        #     ndna,
-        #     death_rate,
-        #     # low_cut=10,
-        #     # high_cut=50,
-        #     low_cut=100,
-        #     high_cut=500,
-        #     death_low_mult=2.0,
-        #     death_mid_mult=.8,
-        #     #death_high_mult=0.8,
-        #     death_high_mult=3.0,
-        # )
         death_params = get_death_rate_scenario(
             scenario_name=death_scenario, **(overrides)
         )
@@ -494,8 +406,6 @@ def simulate(
             n_nDNA=n_nDNA,
         )
         # Make sure that damaged cells divide more slowly.
-        # TODO: set the damage div rate
-        # div_prob[damaged] = 0.001
         div_prob[damaged] = div_prob[damaged] * damaged_div_mult
         div_rand = np.random.rand(ndna.shape[0])
         dividing_mask = div_rand <= div_prob
@@ -535,17 +445,6 @@ def simulate(
             )
 
             # --- nDNA Splitting ---
-            # ndna_div_daughter1 = np.empty(n_div, dtype=np.int64)
-            # idx_bfb = np.where(is_bfb)[0]
-            # if idx_bfb.size > 0:
-            #     ndna_div_daughter1[idx_bfb] = np.random.binomial(
-            #         new_ndna[idx_bfb], p_ecDNA_segregation
-            #     )
-            # idx_nonbfb = np.where(~is_bfb)[0]
-            # if idx_nonbfb.size > 0:
-            #     ndna_div_daughter1[idx_nonbfb] = new_ndna[idx_nonbfb] // 2
-            # ndna_div_daughter2 = new_ndna - ndna_div_daughter1
-            ####################################################
             ndna_div_daughter1 = np.empty(n_div, dtype=np.int64)
             if symmetric_division:
                 ndna_div_daughter1[:] = new_ndna // 2
@@ -559,7 +458,6 @@ def simulate(
                 if idx_nonbfb.size > 0:
                     ndna_div_daughter1[idx_nonbfb] = new_ndna[idx_nonbfb] // 2
             ndna_div_daughter2 = new_ndna - ndna_div_daughter1
-            ####################################################
 
             # Set daughter cell states.
             d1_ndna = ndna_div_daughter1
@@ -606,15 +504,6 @@ def simulate(
 
         n_cells_at_iter.append(ndna.size)
 
-        # Check if that in the last 50 generations the number of cells has not changed much
-        # if len(n_cells_at_iter) > 50:
-        #     if np.std(n_cells_at_iter[-50:]) < 100:
-        #         print(f"Early stopping at generation {gen}")
-        #         break
-        # every 10 generations, print the std
-        # if gen % 10 == 0:
-        #     print(f"std of the last 50 generations: {np.std(n_cells_at_iter[-50:])}")
-
     return np.array(summary), ndna, ecdna, damaged
 
 
@@ -622,10 +511,6 @@ def get_rnd_dirname():
     """
     Generate a random filename. Adds in data and time
     """
-    import string
-    import random
-    import datetime
-
     now = datetime.datetime.now()
     date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
     return (
@@ -768,25 +653,6 @@ if __name__ == "__main__":
     --p_wgd 0.0001 \
     --damaged_death_coeff 50 \
     --division_mode logistic \
-    --outDir ../../results/bfb_simul_feb_07
-
-    python bfb_simul.py \
-    --seed 20001 \
-    --N_CELLS 10000000 \
-    --N_GENERATION 5000 \
-    --N_INITIAL_CELLS 10 \
-    --n_nDNA 2 \
-    --n_ecDNA 0 \
-    --death_rate 0.001 \
-    --div_rate_base 1.0 \
-    --p_bfb 0.5 \
-    --p_damaged 0.9 \
-    --p_fix 0.0001 \
-    --p_wgd 0.00 \
-    --damaged_death_coeff 10 \
-    --division_mode linear \
-    --damaged_div_mult 0.01 \
-    --damage_bfb_multiplier 3 \
     --outDir ../../results/bfb_simul_feb_07
 
 
