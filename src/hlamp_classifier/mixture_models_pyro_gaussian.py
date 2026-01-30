@@ -1,4 +1,3 @@
-import pickle
 import os
 import time
 import argparse
@@ -11,21 +10,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pyro.optim as optim
+from torch.distributions import Normal
 from pyro.infer import SVI, Trace_ELBO, Predictive
 from mixture_models_pyro_utils import load_data
 from mixture_models_pyro_fits import export_model_fits
 from mixture_utils import write_results_to_yaml, pick_best_model
-from mixture_models_pyro_model import (
-    make_init_to_custom_value,
-    model_gaussian,
-    gaussian_mixture_pdf,
-    model,
-)  # now model is the new Gaussian mixture model
-from mixture_models_pyro_globals import (
-    GLOBAL_GET_MIN_SEP,
-    GLOBAL_GET_MAX_GAUSS_SIGMA,
-)
-from mixture_models_pyro_globals import get_effective_width
+from mixture_models_pyro_model import model_gaussian
+from mixture_models_pyro_globals import get_effective_width, GLOBAL_GET_MAX_GAUSS_SIGMA
+from sklearn.mixture import GaussianMixture
+from scipy.stats import norm
 
 # ------------------------------------------------------------------------------
 # Set device to GPU if available
@@ -36,7 +29,6 @@ if device.type == "cuda":
     print("Using GPU")
 else:
     print("Not using GPU, using CPU")
-
 
 # ------------------------------------------------------------------------------
 # Helper: Get parameter value either from the param store or from a provided guide sample.
@@ -82,7 +74,9 @@ def compute_nll(data, MAX_GAUSS_SIGMA=None, effective_width=None, fit_result=Non
 # ------------------------------------------------------------------------------
 # A function to plot the raw data and the fitted Gaussian mixture density.
 # ------------------------------------------------------------------------------
-def internal_plot(data, x_range, mixture_pdf, extra_pdfs=None, fpath=None, titleStr=None):
+def internal_plot(
+    data, x_range, mixture_pdf, extra_pdfs=None, fpath=None, titleStr=None
+):
     plt.clf()
     plt.figure(figsize=(10, 6))
     plt.hist(data.numpy(), bins=30, density=True, alpha=0.5, label="Data")
@@ -174,27 +168,17 @@ def plot_fit(
     else:
         x_range = torch.linspace(x_range[0], x_range[1], num_points)
     # Compute the overall Gaussian mixture density.
-    # mixture_pdf = gaussian_mixture_pdf(x_range, alphas_est, mus_est, sigmas_est)
     M = len(alphas_est)
     gauss_components = [dist.Normal(mus_est[i], sigmas_est[i]) for i in range(M)]
     mix = HeteroMixture(alphas_est, gauss_components)
     mixture_pdf = mix.log_prob(x_range).detach().exp()
-    # mix = dist.MixtureSameFamily(
-    #     dist.Categorical(alphas_est),
-    #     dist.Normal(mus_est, sigmas_est),
-    # )
     # Now compute the individual Gaussian components.
     extra_pdfs = {}
     for i in range(M):
-        # gauss_pdf = dist.Normal(mus_est[i], sigmas_est[i]).log_prob(x_range).detach().exp()
-        # mix_ = HeteroMixture([alphas_est[i]], [gauss_components[i]])
-        # gauss_pdf = mix_.log_prob(x_range).detach().exp()
         gauss_pdf = alphas_est[i] * gauss_components[i].log_prob(x_range).detach().exp()
         extra_pdfs[f"gauss_comp_{i}"] = gauss_pdf
 
     # Now fit a Gaussian to the data using optimization and sklearn
-    from scipy.stats import norm
-
     mu, sd = norm.fit(data.numpy())
     # Print the fitted parameters
     print(f"Fitted Single Gaussian: mu = {mu:.2f}, sd = {sd:.2f}")
@@ -235,9 +219,6 @@ def plot_fit(
 
     def fit_gmm(data=None, covariance_type="diag"):
         """Fit a mixture of gaussians with two components and print the means and sigmas and the components"""
-        from sklearn.mixture import GaussianMixture
-
-        # gmm = GaussianMixture(n_components=2, covariance_type=covariance_type, max_iter=10000, n_init=1, random_state=111)
         gmm = GaussianMixture(n_components=2, covariance_type=covariance_type)
         gmm.fit(data.reshape(-1, 1))
         # Get the components
@@ -390,77 +371,18 @@ def fit_model(
     print(f"Data mean: {train_counts.mean():.2f}")
     print(f"Data std: {train_counts.std():.2f}")
     print(f"Data kurtosis: {pd.Series(np.exp(train_counts)).kurtosis():.2f}")
+    
     pyro.clear_param_store()
     pyro.set_rng_seed(seed)
 
-    def make_init_func(train_data, M_value):
-        def init_to_custom_value(site):
-            name = site["name"]
-            # TODO: fix to alphas
-            if name == "alpha":
-                # return torch.ones(M_value) / M_value
-                return torch.ones(M_value) * 0.2
-            elif name == "mu_components":
-                return torch.ones(M_value) * train_data.mean()
-            # elif name == "l_components":
-            #     return torch.zeros(M_value)
-            else:
-                # For any other latent variables, fallback to the default initialization
-                return site["fn"]()
-
-        return init_to_custom_value
-
-    def make_init_xx(train_data, M_value, effective_width=None):
-        """
-        Custom initialization function for the Gaussian mixture model.
-
-        Parameters:
-        train_data: the training data, used to compute the data mean.
-        M_value: number of Gaussian components.
-        effective_width: (optional) if provided, you could use this to adjust the baseline separation.
-
-        Returns:
-        A function that maps a site (dictionary) to an initial value.
-        """
-        # You can replace this constant with a call to GLOBAL_GET_MIN_SEP(effective_width) if desired.
-        baseline = 1.5
-
-        def init_to_custom_value(site):
-            name = site["name"]
-            if name == "alphas":
-                # Initialize mixing weights uniformly.
-                return torch.ones(M_value) / M_value
-                # return torch.tensor(np.array([0.01, .09]))
-            # elif name == "mu0":
-            #     # Initialize the first mean near the data mean (with small noise).
-            #     return torch.tensor(train_data.mean()) + 0.1 * torch.randn(1)
-            # elif name == "delta":
-            #     # Initialize M-1 positive differences. The prior expectation of an Exponential(1) is 1.
-            #     # These will be shifted by 'baseline' in the model.
-            #     # return 1.0 * torch.ones(M_value - 1) + 0.1 * torch.rand(M_value - 1)
-            #     return 0.1 * torch.rand(M_value - 1)
-            # elif name == "l_components":
-            #     # Initialize near zero so that sigma_components starts at ~0.5*MAX_GAUSS_SIGMA.
-            #     return torch.zeros(M_value)
-            else:
-                # Fallback to the default initialization.
-                return site["fn"]()
-
-        return init_to_custom_value
-
-    # init_loc_fn = make_init_func(train_counts, M)
-    # guide = pyro.infer.autoguide.AutoDelta(model_gaussian, init_loc_fn=init_loc_fn)
-    # guide = pyro.infer.autoguide.AutoDelta(model_gaussian, init_loc_fn=make_init_xx(train_counts, M))
     guide = pyro.infer.autoguide.AutoDelta(model_gaussian)
     optimizer = optim.AdamW({"lr": learning_rate})
     svi = SVI(model_gaussian, guide, optimizer, loss=Trace_ELBO())
-    # guide = pyro.infer.autoguide.AutoDelta(model)
-    # optimizer = optim.AdamW({"lr": learning_rate})
-    # svi = SVI(model, guide, optimizer, loss=Trace_ELBO())
 
     best_loss = float("inf")
     best_state = None
     worst_loss = float("-inf")
+    
     pbar = tqdm(range(n_steps))
     for step in pbar:
         loss = svi.step(
@@ -523,7 +445,6 @@ def fit_model(
     print(f"alphas_est: {fit_result.alpha}")
     nll_train = fit_result.fun
 
-    #titleStr = f"{titleStr}\nMixture weights: {np.round(fit_result.alpha, 2)}"
     # Concatenate train and test count as a torch.tensor
     full_data = None
     if test_counts is not None:
@@ -562,46 +483,39 @@ def fit_model(
     return tmp_log, fit_result
 
 
-
-
 # ------------------------------------------------------------------------------
 # Finding the smallest x that covers 95% of the data (kinda the range based on alpha)
 # ------------------------------------------------------------------------------
-
 def component_quantiles(fit_result, p=0.95):
-    mu=torch.as_tensor(fit_result.mus_est,dtype=torch.float)
-    sg=torch.as_tensor(fit_result.sigmas_est,dtype=torch.float)
-    z=Normal(0.0,1.0).icdf(torch.tensor(p,dtype=torch.float))
-    return (mu+sg*z)
+    mu = torch.as_tensor(fit_result.mus_est, dtype=torch.float)
+    sg = torch.as_tensor(fit_result.sigmas_est, dtype=torch.float)
+    z = Normal(0.0, 1.0).icdf(torch.tensor(p, dtype=torch.float))
+    return mu + sg * z
+
 
 def mixture_quantile(fit_result, p=0.95, data=None, pad=2.0, iters=60):
-    w=torch.as_tensor(fit_result.alpha,dtype=torch.float)
-    mu=torch.as_tensor(fit_result.mus_est,dtype=torch.float)
-    sg=torch.as_tensor(fit_result.sigmas_est,dtype=torch.float)
-    Phi=Normal(0.0,1.0).cdf
+    w = torch.as_tensor(fit_result.alpha, dtype=torch.float)
+    mu = torch.as_tensor(fit_result.mus_est, dtype=torch.float)
+    sg = torch.as_tensor(fit_result.sigmas_est, dtype=torch.float)
+    Phi = Normal(0.0, 1.0).cdf
     if data is not None:
-        lo=float(torch.min(data))-pad*float(torch.std(data))
-        hi=float(torch.max(data))+pad*float(torch.std(data))
+        lo = float(torch.min(data)) - pad * float(torch.std(data))
+        hi = float(torch.max(data)) + pad * float(torch.std(data))
     else:
-        lo=float(torch.min(mu-6*sg))
-        hi=float(torch.max(mu+6*sg))
-    lo=torch.tensor(lo); hi=torch.tensor(hi)
+        lo = float(torch.min(mu - 6 * sg))
+        hi = float(torch.max(mu + 6 * sg))
+    lo = torch.tensor(lo)
+    hi = torch.tensor(hi)
     for _ in range(iters):
-        mid=(lo+hi)/2
-        cdf=torch.sum(w*(Phi((mid-mu)/sg)))
-        lo,hi=torch.where(cdf<p,mid,lo),torch.where(cdf>=p,mid,hi)
-    return float((lo+hi)/2)
+        mid = (lo + hi) / 2
+        cdf = torch.sum(w * (Phi((mid - mu) / sg)))
+        lo, hi = torch.where(cdf < p, mid, lo), torch.where(cdf >= p, mid, hi)
+    return float((lo + hi) / 2)
 
 
 # ------------------------------------------------------------------------------
 # Finding the mode
 # ------------------------------------------------------------------------------
-import torch
-import math
-from torch.distributions import Normal, Categorical
-
-import torch
-from torch.distributions import Normal
 
 def mixture_logpdf(x, weights, mus, sigmas):
     # x: scalar tensor or 1D; returns scalar log-density at x
@@ -609,12 +523,17 @@ def mixture_logpdf(x, weights, mus, sigmas):
     log_terms = torch.log(weights) + comp.log_prob(x.unsqueeze(-1))
     return torch.logsumexp(log_terms, dim=-1)
 
-def find_mode_1d(fit_result, data, pad=1.0, n_grid=2048, n_refine=80, lr=0.1, device=None):
+
+def find_mode_1d(
+    fit_result, data, pad=1.0, n_grid=2048, n_refine=80, lr=0.1, device=None
+):
     # gather tensors on a common device
-    device = device or (torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu"))
-    w  = torch.as_tensor(fit_result.alpha,     dtype=torch.float, device=device)
-    mu = torch.as_tensor(fit_result.mus_est,   dtype=torch.float, device=device)
-    sg = torch.as_tensor(fit_result.sigmas_est,dtype=torch.float, device=device)
+    device = device or (
+        torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    )
+    w = torch.as_tensor(fit_result.alpha, dtype=torch.float, device=device)
+    mu = torch.as_tensor(fit_result.mus_est, dtype=torch.float, device=device)
+    sg = torch.as_tensor(fit_result.sigmas_est, dtype=torch.float, device=device)
     data = data.to(device)
     # coarse grid init on logpdf
     lo = data.min().item() - pad * data.std().item()
@@ -638,11 +557,12 @@ def find_mode_1d(fit_result, data, pad=1.0, n_grid=2048, n_refine=80, lr=0.1, de
     f_xstar = torch.exp(mixture_logpdf(x_mode, w, mu, sg)).item()
     return x_mode, f_xstar
 
+
 @torch.no_grad()
 def mass_in_window_around_mode(fit_result, x_mode, r):
-    w  = torch.as_tensor(fit_result.alpha,     dtype=torch.float)
-    mu = torch.as_tensor(fit_result.mus_est,   dtype=torch.float)
-    sg = torch.as_tensor(fit_result.sigmas_est,dtype=torch.float)
+    w = torch.as_tensor(fit_result.alpha, dtype=torch.float)
+    mu = torch.as_tensor(fit_result.mus_est, dtype=torch.float)
+    sg = torch.as_tensor(fit_result.sigmas_est, dtype=torch.float)
     Phi = Normal(0.0, 1.0).cdf
     z_hi = (x_mode + r - mu) / sg
     z_lo = (x_mode - r - mu) / sg
@@ -658,6 +578,7 @@ def responsibilities_at_x(fit_result, x):
     log_w_post = torch.log(w) + comp.log_prob(torch.as_tensor(x))
     log_w_post = log_w_post - torch.logsumexp(log_w_post, dim=-1)
     return torch.softmax(log_w_post, dim=-1).numpy()
+
 
 # ------------------------------------------------------------------------------
 # Main function
@@ -715,7 +636,7 @@ def main(
     }
     with open(CONF_PATH, "w") as f:
         yaml.dump(configs, f)
-    
+
     logs = {}
     r_counts, tail_vals, r_counts_FULL = load_data(dat_path, locus=locus, do_log=True)
 
@@ -723,7 +644,7 @@ def main(
     # If there are fewer than 10 cells don't run anything just exit
     if n_cells_orig < 10:
         print(
-            f"Not enough cells ({n_cells_orig}) to run the model. Exiting. Please check your data."
+            f"Not enough cells ({n_cells_orig}) to run the model. Exiting. Please check the data."
         )
         return
     np.random.seed(seed)
@@ -761,7 +682,6 @@ def main(
     effective_width = get_effective_width(train_counts)
     configs["effective_width"] = float(effective_width)
 
-
     # Plot r_counts_full
     if r_counts_FULL is not None:
         fpath = os.path.join(figuresDir, f"r_counts_FULL_{datNameTitle}_{locus}.png")
@@ -781,8 +701,6 @@ def main(
         tmp_logs = {}
         the_fits = {}
         for the_seed in [10, 20, 30, 40, 50]:
-        #for the_seed in [50]:
-            # for the_seed in [seed]:
             print(f"Running for seed {the_seed}")
             # set the seed for all
             np.random.seed(the_seed)
@@ -810,13 +728,24 @@ def main(
             x_star, f_xstar = find_mode_1d(fit_result, data_t)  # now works
             p_window = mass_in_window_around_mode(fit_result, x_star.item(), r=0.5)
             resp = responsibilities_at_x(fit_result, x_star.item())
-            print({"x_mode": float(x_star), "density_at_mode": f_xstar, "mass_in_window": p_window, "resp": resp})
+            print(
+                {
+                    "x_mode": float(x_star),
+                    "density_at_mode": f_xstar,
+                    "mass_in_window": p_window,
+                    "resp": resp,
+                }
+            )
             ##############################################################################
             # Extract the model range
             ##############################################################################
             q_comp = component_quantiles(fit_result, p=0.95)  # tensor of size M
             # overall mixture 95% upper coverage point
-            q_mix = mixture_quantile(fit_result, p=0.95, data=torch.as_tensor(train_counts,dtype=torch.float))
+            q_mix = mixture_quantile(
+                fit_result,
+                p=0.95,
+                data=torch.as_tensor(train_counts, dtype=torch.float),
+            )
             print(f"Component 95% quantiles: {q_comp}")
             print(f"Overall mixture 95% quantile: {q_mix:.2f}")
             # Add them to tmp_log
@@ -828,15 +757,8 @@ def main(
             tmp_log["mix_95_quantile"] = float(q_mix)
             tmp_logs[the_seed] = tmp_log
             losses[the_seed] = tmp_log["loss"]
-            #losses[the_seed] = tmp_log["nll_test"]
+            # losses[the_seed] = tmp_log["nll_test"]
             the_fits[the_seed] = fit_result
-        
-        # data_t = torch.as_tensor(train_counts, dtype=torch.float)
-        # x_star, f_xstar = find_mode_1d(fit_result, data_t)    # x_star is the mode, f_xstar is the density there
-        # r = 0.5                                               # choose neighborhood radius in data units
-        # p_window = mass_in_window_around_mode(fit_result, x_star.item(), r)
-        #resp = responsibilities_at_x(fit_result, x_star.item())
-        #print({"x_mode": float(x_star), "density_at_mode": f_xstar, "mass_in_window": p_window, "resp": resp})        
 
         best_seed = min(losses, key=losses.get)
         logs[M] = tmp_logs[best_seed]
@@ -844,8 +766,6 @@ def main(
         write_results_to_yaml(tmp_logs, TRAINING_LOG_PATH, verbose=verbose)
         # Print the chosen alpha
         print(f"Best alpha_est = {logs[M]['alphas_est']}")
-        # plot the latest
-        #titleStr = f"{titleStr}\nMixture weights: {np.round(fit_result.alpha, 2)}"
         plot_fit(
             torch.tensor(train_counts, dtype=torch.float),
             fpath=os.path.join(outDir, f"fit_result_M{M}.png"),
@@ -913,7 +833,7 @@ def main(
 
     export_model_fits(BEST_MODEL_PATH, CONF_PATH, outDir=outDir)
 
-    # (Optional) Rerun on full data if needed...
+    # Rerun on full data if needed...
     if M > 0 and holdoff_rate > 0 and not no_loop:
         best_model = logs[best_M]
         best_M = best_model["M"]

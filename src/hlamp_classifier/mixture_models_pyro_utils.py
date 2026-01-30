@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from scipy.ndimage import gaussian_filter
 from scipy.signal import find_peaks, peak_widths
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import peak_widths
@@ -52,6 +51,7 @@ def compute_peaks(data, num_bins=None, sigma=1.0, **kwargs):
     }
     return results_dict
 
+
 def process_peak_results(bin_centers, peaks, left_ips, right_ips, bin_width, widths_indices, widths_x):
     """
     Compute the left_base_x, and right_base_x for each peak
@@ -92,8 +92,6 @@ def load_data(
     do_log=False,
     do_inject_ref=False,
     do_inject_tail=False,
-    do_gaussian_filter=True,
-    do_cutoff=True,
     do_prune_left=True,
     keep_cells=None,
     drop_normals=True,
@@ -151,21 +149,8 @@ def load_data(
         # Extract all values above the 95% percentile
         tail_vals = vals[vals >= ninety_five_percentile]
         print(f"Injecting tail values above 95% percentile: {tail_vals}")
-        # vals = np.concatenate([vals, tail_vals])
-    # Cut values smaller than 10
-    # if do_cutoff:
-    #     print('Removing all values below 10')
-    #     vals = vals[vals >= 7].copy()
-    # if do_gaussian_filter:
-    #     print("Applying gaussian filter")
-    #     #vals = gaussian_filter1d(vals, sigma=1)
     if do_prune_left:
         # Remove values that are smaller than the mean frequncy and have copy number less than 10
-        # compute freqs
-        # HACK: if the max value is less than 2, then 
-        # if np.max(vals) < 2:
-        #     print("Max value less than 2, skipping left pruning by peaks")
-        # else:
         left_base_positions, right_base_positions = peak_driver(vals)
         # if left_base_positions is not empty, and its value is less than 10, remove all values to the left of it
         if len(left_base_positions) > 0:
@@ -175,17 +160,9 @@ def load_data(
                     # Remove all the values to the left of it
                     print(f"Removing all values to the left of {left_base_position}")
                     vals = vals[vals >= left_base_position].copy()
-                #    vals = vals - left_base_position
-                # elif left_base_position < 120:
-                #     print(f"Removing all values to the left of {left_base_position} but keeping some")
-                #     # shift it to the left by this amount
-                #     vals = vals - left_base_position
-                #     break
                 else:
                     # Otherwise, leave
                     break
-        # Just remove all values below 
-        #vals = vals[vals >= 5].copy()
     if drop_normals:
         print(f"Dropping all values with copy number {minimal_normal} or below")
         vals = vals[vals > minimal_normal].copy()
@@ -196,7 +173,6 @@ def load_data(
         all_vals = np.log(all_vals + 1e-10)
         len_before = len(vals)
         # Remove all negative values
-        # print('Removing all values below exp(0.1)')
         vals = vals[vals >= 0.0].copy()
         len_after = len(vals)
         print(f"Cells remaining {len_after}/{len_before}")
