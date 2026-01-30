@@ -1,0 +1,14 @@
+binsize: 10000
+
+pipeline_dir: 'ecademix_pipeline_dirg'
+working_dir: 'ecademix_working_dir'
+
+python_bin: 'path_to_python_bin'
+
+# parameters specific to the cohort used for the HLAMPs paper
+regions_table: "metadata/ecdna.regions_120525.tsv"
+ecademix_params: "metadata/ecademix_params.csv"
+bamfiles_table: 'metadata/bamfiles.csv'
+
+# path to Gurobi license file
+gurobi_license_file: '/admin/software/gurobi/gurobi.lic'
