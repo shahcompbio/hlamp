@@ -312,7 +312,7 @@ svsketch.dlp.sv.seg.cn.onecell.cssv(w, i, z, regions, geneofi)
 # Panel B: conceptual illustration
 
 # Panel C, top
-w <- "PM_0510"
+w <- "GBM0510"
 
 celldf <- read.csv("./ordered_loadings.csv")
 qc <- fread(paste0("./metadata/doublet_invariant_filtered/", w, "_qc.filtered.csv"))
@@ -648,8 +648,8 @@ clone.specific.sv <- function(w, ...){
   # Step 1
   if (w == "2765_2"){
     cndf <- read.csv("./results/sv_cna_clones_nov_14_v2/2765_2/tables/2765_2_clusters_0.7_1000.csv")
-  } else if (w == "PM_0510_custom"){
-    cndf <- read.csv("./metadata/custom_clones/PM_0510_custom.clones.csv")
+  } else if (w == "GBM0510_custom"){
+    cndf <- read.csv("./metadata/custom_clones/GBM0510_custom.clones.csv")
   } else if (w == "NCI-H69_custom"){
     cndf <- read.csv("./metadata/custom_clones/NCI-H69_custom.clones.csv")
   } else if (w == "GBM0721_custom"){
@@ -660,8 +660,8 @@ clone.specific.sv <- function(w, ...){
   colnames(cndf)[2] <- "clone_id"
   cndf$cell_id <- str_sub(cndf$cell_id, -15)
   
-  if (w == "PM_0510_custom"){
-    qc <- fread(paste0("./metadata/doublet_invariant_filtered/PM_0510_qc.filtered.csv"))
+  if (w == "GBM0510_custom"){
+    qc <- fread(paste0("./metadata/doublet_invariant_filtered/GBM0510_qc.filtered.csv"))
     qc$cell_id <- str_sub(qc$cell_id, -15)
     qc <- qc[cell_id %in% cndf$cell_id]
     cndf <- cndf[cndf$cell_id %in% qc$cell_id,]
@@ -700,7 +700,7 @@ clone.specific.sv <- function(w, ...){
   svmat$cell_id <- str_sub(svmat$cell_id, -15)
   
   colnames(svmat) <- gsub("_right", "", gsub("_left", "", colnames(svmat)))
-  if (w %in% c("PM_0510_custom", "NCI-H69_custom", "GBM0721_custom")){
+  if (w %in% c("GBM0510_custom", "NCI-H69_custom", "GBM0721_custom")){
     svmat <- svmat[cell_id %in% qc$cell_id]
   } else {
     svmat <- svmat[cell_id %in% qc$cell_id[qc$decision == "include"]]
@@ -726,7 +726,7 @@ clone.specific.sv <- function(w, ...){
   svmat$cell_id <- str_sub(svmat$cell_id, -15)
   
   colnames(svmat) <- gsub("_right", "", gsub("_left", "", colnames(svmat)))
-  if (w %in% c("PM_0510_custom", "NCI-H69_custom", "GBM0721_custom")){
+  if (w %in% c("GBM0510_custom", "NCI-H69_custom", "GBM0721_custom")){
     svmat <- svmat[cell_id %in% qc$cell_id]
   } else {
     svmat <- svmat[cell_id %in% qc$cell_id[qc$decision == "include"]]
@@ -749,8 +749,8 @@ clone.specific.sv <- function(w, ...){
   mat <- mat + mat2
   
   # 4. Load svdf
-  if (w == "PM_0510_custom"){
-    svdf <- fread(paste0("./analysis/hmf/gridss_somatic/PM_0510/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
+  if (w == "GBM0510_custom"){
+    svdf <- fread(paste0("./analysis/hmf/gridss_somatic/GBM0510/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
   } else if (w == "NCI-H69_custom"){
     svdf <- fread(paste0("./analysis/hmf/gridss_tumoronly/NCI-H69/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
   } else if (w == "GBM0721_custom"){
@@ -798,8 +798,8 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
   
   chrs <- df$chr
   
-  if (w == "PM_0510_custom"){
-    qc <- fread(paste0("./metadata/doublet_invariant_filtered/PM_0510_qc.filtered.csv"))
+  if (w == "GBM0510_custom"){
+    qc <- fread(paste0("./metadata/doublet_invariant_filtered/GBM0510_qc.filtered.csv"))
   } else if (w == "NCI-H69_custom"){
     qc <- fread(paste0("./metadata/doublet_invariant_filtered/NCI-H69_qc.filtered.csv"))
   } else if (w == "GBM0721_custom"){
@@ -809,8 +809,8 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
   }
   qc$cell_id <- str_sub(qc$cell_id, -15)
   
-  if (w == "PM_0510_custom"){
-    df_final <- fread(paste0("./analysis/normalization/cn_dataframe/PM_0510.normalized.gc_corrected.filters.annotated.csv"))
+  if (w == "GBM0510_custom"){
+    df_final <- fread(paste0("./analysis/normalization/cn_dataframe/GBM0510.normalized.gc_corrected.filters.annotated.csv"))
   } else if (w == "NCI-H69_custom"){
     df_final <- fread(paste0("./analysis/normalization/cn_dataframe/NCI-H69.normalized.gc_corrected.filters.annotated.csv"))
   } else if (w == "GBM0721_custom"){
@@ -820,8 +820,8 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
   }
   df_final$cell_id <- str_sub(df_final$cell_id, -15)
   
-  if (w == "PM_0510_custom"){
-    celldf <- read.csv("./analysis/metadata/custom_clones/PM_0510_custom.clones.csv")
+  if (w == "GBM0510_custom"){
+    celldf <- read.csv("./analysis/metadata/custom_clones/GBM0510_custom.clones.csv")
     df_final <- df_final[
       normal_reads != 0 &
         segment_length >= 1000 &
@@ -945,8 +945,8 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
       df_final$plot.end[df_final$regs == regs[j]] <- df_final$end[df_final$regs == regs[j]] - df$start[df$regs == regs[j]] + df$add_value[df$regs == regs[j]]
     }
     
-    if (w == "PM_0510_custom"){
-      svdf <- fread(paste0("./analysis/hmf/gridss_somatic/PM_0510/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
+    if (w == "GBM0510_custom"){
+      svdf <- fread(paste0("./analysis/hmf/gridss_somatic/GBM0510/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
     } else if (w == "NCI-H69_custom"){
       svdf <- fread(paste0("./analysis/hmf/gridss_tumoronly/NCI-H69/COMPOSITE_TUMOR_LIBRARIES.gripss.filtered.vf.paired.annotated.bedpe"))
     } else if (w == "GBM0721_custom"){
@@ -1016,7 +1016,7 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
     svmat$cell_id <- str_sub(svmat$cell_id, -15)
     
     colnames(svmat) <- gsub("_right", "", gsub("_left", "", colnames(svmat)))
-    if (w %in% c("PM_0510_custom", "NCI-H69_custom")){
+    if (w %in% c("GBM0510_custom", "NCI-H69_custom")){
       svmat <- svmat[cell_id %in% celldf$cell_id]
     } else {
       svmat <- svmat[cell_id %in% qc$cell_id[qc$decision == "include"]]
@@ -1042,7 +1042,7 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
     svmat$cell_id <- str_sub(svmat$cell_id, -15)
     
     colnames(svmat) <- gsub("_right", "", gsub("_left", "", colnames(svmat)))
-    if (w %in% c("PM_0510_custom", "NCI-H69_custom", "GBM0721_custom")){
+    if (w %in% c("GBM0510_custom", "NCI-H69_custom", "GBM0721_custom")){
       svmat <- svmat[cell_id %in% celldf$cell_id]
     } else {
       svmat <- svmat[cell_id %in% qc$cell_id[qc$decision == "include"]]
@@ -1062,7 +1062,7 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
     mat <- mat + mat2
     svdf <- svdf[svname %in% colnames(mat)]
     
-    if (w %in% c("PM_0510_custom", "NCI-H69_custom", "GBM0721_custom")){
+    if (w %in% c("GBM0510_custom", "NCI-H69_custom", "GBM0721_custom")){
       celllist <- celldf$cell_id
     } else {
       celllist <- qc$cell_id[qc$decision == "include" & qc$cell_id %in% rownames(mat)]
@@ -1114,8 +1114,8 @@ svsketch.dlp.sv.seg.cn.onecell.cssv <- function(w, i, z, regions, geneofi){
       
       if (w == "2765_2"){
         cndf <- read.csv("./results/sv_cna_clones_nov_14_v2/2765_2/tables/2765_2_clusters_0.7_1000.csv")
-      } else if (w == "PM_0510_custom"){
-        cndf <- read.csv("./analysis/metadata/custom_clones/PM_0510_custom.clones.csv")
+      } else if (w == "GBM0510_custom"){
+        cndf <- read.csv("./analysis/metadata/custom_clones/GBM0510_custom.clones.csv")
       } else if (w == "NCI-H69_custom"){
         cndf <- read.csv("./analysis/metadata/custom_clones/NCI-H69_custom.clones.csv")
       } else if (w == "GBM39-DM"){
