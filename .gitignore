@@ -69,3 +69,8 @@ desktop.ini
 
 # ecademix platform-specific metadata tables
 pipelines/ECADeMix/metadata/hlamps-input/*.csv
+
+
+# Local paths
+fix_paths.py
+

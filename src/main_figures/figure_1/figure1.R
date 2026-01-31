@@ -36,7 +36,7 @@ w <- "P-0009535"
 j <- "EGFR"
 
 # Panel E, right
-w <- "20200721"
+w <- "GBM0721"
 j <- "EGFR"
 
 # Panel E, common downstream
