@@ -120,7 +120,7 @@ axis(1, las = 1)
 dev.off()
 
 # Panel B, left
-w <- "P-0009535"
+w <- "EL001"
 
 pdf(paste0("Fig3b.left.", w, ".pdf"), height=4, width=4.5)
 layout(matrix(1:2, nrow=2), heights=c(0.4, 0.6))
@@ -168,7 +168,7 @@ rm(df_final)
 dev.off()
 
 # Panel B, right
-w <- "P-0009535"
+w <- "EL001"
 i <- "EGFR" # x axis
 j <- "CCND1" # y axis
 coli <- rgb(39/255, 64/255, 139/255, .3)
@@ -242,7 +242,7 @@ geneofi <- c("MDM4", "EGFR")
 svsketch.dlp.sv.seg.cn.onecell(w, i, z, regions, geneofi) # This single-cell plotter function is available in Function part at the end of this script.
 
 # Panel D
-w <- "P-0009535"
+w <- "EL001"
 i <- "130113A-R55-C12"
 z <- 6
 regions <- "7-52000000-59000000;11-67000000-72000000;12-55000000-60000000;12-64000000-70000000"
@@ -251,7 +251,7 @@ geneofi <- c("EGFR", "CCND1", "CDK4", "MDM2")
 svsketch.dlp.sv.seg.cn.onecell(w, i, z, regions, geneofi) # This single-cell plotter function is available in Function part at the end of this script.
 
 # Panel E
-w <- "P-0009535"
+w <- "EL001"
 qc <- fread(paste0("./metadata/doublet_invariant_filtered/", w, "_qc.filtered.csv"))
 qc$cell_id <- str_sub(qc$cell_id, -15)
 
@@ -304,12 +304,12 @@ ht
 dev.off()
 
 # Panel F, left
-w <- "P-0009535"
+w <- "EL001"
 geneofi <- c("EGFR", "CCND1", "CDK4", "MDM2")
 qc <- fread(paste0("./metadata/doublet_invariant_filtered/", w, "_qc.filtered.csv"))
 qc$cell_id <- str_sub(qc$cell_id, -15)
 
-celldf <- read.csv("./for-jake/P-0009535_ordered_loadings.csv")
+celldf <- read.csv("./for-jake/EL001_ordered_loadings.csv")
 colnames(celldf) <- c("cell_id", "e1", "e2")
 for (i in rev(c("e1", "e2"))){
   celldf <- celldf[order(celldf[,i], decreasing = T),]

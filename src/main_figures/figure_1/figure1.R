@@ -32,7 +32,7 @@ dev.off()
 # Panel D: conceptual illustration
 
 # Panel E, left
-w <- "P-0009535"
+w <- "EL001"
 j <- "EGFR"
 
 # Panel E, right

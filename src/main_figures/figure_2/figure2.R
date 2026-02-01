@@ -68,7 +68,7 @@ legend("topleft", legend = c(paste0("Numeric (n=", nrow(df[df$cluster == "numeri
 dev.off()
 
 # Panel F
-w <- "P-0099344"
+w <- "EL011"
 clonelist <- c("C", "H")
 chrs <- c("19")
 
