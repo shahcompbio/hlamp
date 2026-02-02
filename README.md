@@ -7,7 +7,7 @@ This is the repository for the manuscript titled `Evolution of oncogene amplific
 
 ### Main Figures
 
-For code to reproduce the main figures, see [Main Figures](src/main_figures).
+Main figure-related codes are available here: [Main Figures](src/main_figures).
 
 
 
