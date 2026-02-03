@@ -1,7 +1,7 @@
-# Dynamic evolution of oncogene amplification across 80,000 cancer cell genomes
+# Evolution of oncogene amplification across 86,000 cancer cell genomes
 
 
-This is the repository for the manuscript titled `Dynamic evolution of oncogene amplification across 80,000 cancer cell genomes`
+This is the repository for the manuscript titled `Evolution of oncogene amplification across 86,000 cancer cell genomes`
 
 
 
