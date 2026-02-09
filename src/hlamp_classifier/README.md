@@ -15,7 +15,7 @@ decision_boundary.ipynb: Uses LDA to fit a classifier on the data.
 ## Fitting the mixture model
 
 ```
-python src/mixture_model/mixture_models_pyro_gaussian.py \
+python mixture_models_pyro_gaussian.py \
     --dat_path path_to_data \
     --locus CCNE1 \
     --subset_counts -1 \
