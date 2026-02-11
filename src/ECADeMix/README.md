@@ -25,8 +25,9 @@ Python package which uses an MILP to infer amplicons and their multiplicities (l
 * `numpy==1.23.0`
 * `matplotlib==3.9.4`
 * `seaborn==0.13.2`
-* `scgenome==`0.0.19`
+* `scgenome==0.0.19`
 * `pandas==2.1.4`
 * `anndata==0.10.3`
 * `scipy==1.13.1`
 * `scikit-learn==1.3.2`
+
