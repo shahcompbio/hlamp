@@ -21,7 +21,7 @@ Python package which uses an MILP to infer amplicons and their multiplicities (l
 
 ## Versions used for paper
 
-* `python=3.9.19`
+* `python==3.9.19`
 * `gurobipy==12.0.2`
 * `numpy==1.23.0`
 * `matplotlib==3.9.4`
@@ -31,5 +31,6 @@ Python package which uses an MILP to infer amplicons and their multiplicities (l
 * `anndata==0.10.3`
 * `scipy==1.13.1`
 * `scikit-learn==1.3.2`
+
 
 
