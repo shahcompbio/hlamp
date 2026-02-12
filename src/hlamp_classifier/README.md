@@ -1,6 +1,23 @@
 # eicicle: HLAMP Classifier 
 
 
+We describe Eicicle, an algorithm to classify HLAMPs as either extrachromosomal (ecDNA) or intrachromosomal (ICamp). Eicicle is based on the following observation. Empirically, the copy number follows a broad distribution when it is driven by the asymmetrical segregation of ecDNA, but a peaked distribution when it is driven by the symmetric segregation of ICamps. Eicicle classifies the cells into those that likely came from the broad ecDNA distribution or the narrow ICamp distribution.
+
+
+Eicicle takes sets of cells, one per patient, and outputs a classification of each set as coming from either ecDNA or ICamp. The algorithm proceeds as follows.
+
+(1) It first fits a Gaussian mixture to each set of cells, estimating
+their distribution.
+
+(2) It then computes two scores from the estimated distributions---an ecDNA score and a mass-in-window score. These scores are indicative of ecDNA and ICamp, respectively.
+
+(3) It labels the sets of cells at the extreme values of these scores
+as coming from ecDNA and ICamp.
+
+(4) It runs a linear discriminant analysis to classify the rest of the
+sets of cells.
+
+
 
 ## Files
 
@@ -27,3 +44,13 @@ python mixture_models_pyro_gaussian.py \
     --no_loop \
     --learning_rate .02
 ```
+
+
+## Multi Sample Mode
+
+The ecDNAscore is designed for a multi-sample mode in which both positive and negative cases are observed. 
+
+
+## Single Sample Mode
+
+It is possible to compute a single sample mode. In the publication, the multi-sample mode is used.
