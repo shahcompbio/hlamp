@@ -48,9 +48,16 @@ python mixture_models_pyro_gaussian.py \
 
 ## Multi Sample Mode
 
-The ecDNAscore is designed for a multi-sample mode in which both positive and negative cases are observed. 
+`ecDNA-score` can be computed in the multi-case mode in which both positive and negative cases are observed. 
+In the multi-case mode we compute the Z-score for mean and s.d. of the components with the largest mixing proportion, then rescale the resulting quantity to lie between 0 and 1. 
+We report this mode in our manuscript. 
+
 
 
 ## Single Sample Mode
 
-It is possible to compute a single sample mode. In the publication, the multi-sample mode is used.
+It is possible to compute the `ecDNA-score` in a single-sample mode. 
+In this mode, we do not Z-score the mean and s.d. of the major component, nor do we rescale it to lie between 0 and 1. 
+
+
+
