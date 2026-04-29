@@ -183,7 +183,7 @@ def plot_fit(
     # Print the fitted parameters
     print(f"Fitted Single Gaussian: mu = {mu:.2f}, sd = {sd:.2f}")
     # Create a normal distribution with the fitted parameters
-    fitted_dist = dist.Normal(mu, sd)
+    fitted_dist = dist.Normal(torch.tensor(float(mu)), torch.tensor(float(sd)))
     # Compute the PDF of the fitted distribution
     fitted_pdf = fitted_dist.log_prob(x_range).detach().exp()
     # Append the fitted PDF to the extra_pdfs list

@@ -27,4 +27,11 @@ Main figure-related codes are available here: [Main Figures](src/main_figures).
 
 
 
+### Software and Tools
+
+For the source code and tutorial for `eicicle` see [eicicle](src/eicicle).
+
+For the source code and tutorial for `ECADeMix ` see [ECADeMix](src/ECADeMix).
+
+
 
