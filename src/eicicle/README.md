@@ -54,7 +54,7 @@ cd hlamp/src/eicicle
 
 # Create the environment at a custom location.
 conda env create \
-    --prefix /data1/shahs3/users/salehis/conda/eicicle \
+    --prefix /path/to/conda/eicicle \
     --file environment.yml
 
 # Activate it.
